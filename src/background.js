@@ -1,28 +1,25 @@
-/*
- * @Author: wz && vgqk@qq.com
- * @Date: 2024-12-14 22:39:46
- *
- * Copyright (c) 2024 by wz, All Rights Reserved.
- */
-chrome.webRequest.onBeforeRequest.addListener(
-  (details) => {
-    // 检查请求的 URL 是否匹配
-    if (
-      details.url.includes(
-        'https://h5.qzone.qq.com/proxy/domain/photo.qzone.qq.com/fcgi-bin/cgi_list_photo'
-      )
-    ) {
-      console.log('拦截到请求:', details.url);
-
-      // 存储 URL 到 chrome.storage
-      chrome.storage.local.set({ albumUrl: details.url }, () => {
-        console.log('URL 已存储:', details.url);
-      });
+importScripts('core.js');
+// Session URLs are kept locally, never written to logs or exported manifests.
+let writes=Promise.resolve();
+chrome.webRequest.onBeforeRequest.addListener(details=>{
+  if(details.tabId<0)return;
+  writes=writes.then(async()=>{
+    const u=new URL(details.url);
+    const stored=await chrome.storage.local.get(['captures','listUrl']);
+    if(u.pathname.includes('cgi_list_photo')){
+      const id=QCore.key(details.url);if(id.endsWith(':'))return;
+      const captures=stored.captures||{};
+      captures[id]={id,url:details.url,seen:Date.now(),tabId:details.tabId};
+      await chrome.storage.local.set({captures});
+      await chrome.action.setBadgeText({text:String(Object.keys(captures).length)});
+    }else if(/(?:cgi|fcg)_list_album/.test(u.pathname)){
+      await chrome.storage.local.set({listUrl:details.url});
     }
-  },
-  {
-    urls: [
-      '*://h5.qzone.qq.com/proxy/domain/photo.qzone.qq.com/fcgi-bin/cgi_list_photo*',
-    ],
-  } // 匹配的 URL 模式
-);
+  }).catch(()=>{});
+},{urls:['https://*.qzone.qq.com/*cgi_list_photo*','https://*.qzone.qq.com/*cgi_list_album*','https://*.qzone.qq.com/*fcg_list_album*']});
+chrome.action.onClicked.addListener(async()=>{
+  const url=chrome.runtime.getURL('src/manager.html');
+  const tabs=await chrome.tabs.query({url});
+  if(tabs.length)await chrome.tabs.update(tabs[0].id,{active:true});
+  else await chrome.tabs.create({url});
+});

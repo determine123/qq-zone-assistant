@@ -1,2 +1,7 @@
-
-.DS_Store
+node_modules/
+dist/
+.env*
+*接口诊断*.json
+*照片清单*.json
+QQ空间备份/
+*.log

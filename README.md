@@ -1,80 +1,52 @@
-# QQ 空间相册下载 Chrome 插件
+# QQ空间相册备份助手
 
-批量下载 QQ 空间相册照片的浏览器扩展，支持自定义下载数量限制。
+Edge / Chrome Manifest V3 扩展：输入相册地址，在已登录的浏览器中直接下载照片到本机，无需预览。照片不上传到服务器。
 
-![界面截图](image/img.png)
+## 原项目与许可证
 
-## 功能特点
+本项目基于 **[withwz/qq-zone-assistant](https://github.com/withwz/qq-zone-assistant)**，保留原项目提交历史、原作者署名 `Copyright (c) 2024 wz` 和 [MIT许可证](LICENSE)。本仓库由 determine123 整理发布改进版，不是腾讯官方产品。
 
-- 批量下载 QQ 空间普通相册的全部照片
-- 支持设置最大下载数量（默认 500 张）
-- 自动打包为 ZIP 文件下载
-- 实时显示下载进度
+原项目采用ZIP打包；本版增加独立管理页、浏览器直接下载、暂停重试、成功记录、分页兼容及脱敏结构诊断。当前入口是 `src/manager.html`；旧版脚本保留作来源参考。
 
-## 使用方法
+## 安装使用
 
-### 安装插件
+1. 下载仓库ZIP并解压，或克隆本仓库。
+2. 打开 `edge://extensions/` 或 `chrome://extensions/`，开启开发者模式。
+3. 点击「加载解压缩的扩展」，选择含 `manifest.json` 的目录。
+4. 在同一浏览器手动登录QQ空间，点击扩展图标打开管理页。
+5. 输入 `https://user.qzone.qq.com/账号/photo/相册ID/`，点击「直接下载」。最多张数留空表示全部。
+6. 保持管理页打开。需要重新读取接口时，在目标相册刷新，再点击「继续 / 重试」。
 
-1. 打开 Chrome 浏览器，访问 `chrome://extensions/`
-2. 开启右上角的「开发者模式」
-3. 点击「加载已解压的扩展程序」
-4. 选择本项目目录
+照片存到浏览器下载目录的 `QQ空间备份/账号/相册目录/`。已记录成功的照片会跳过；删除本机照片不会自动清除成功记录。「已处理」不等于完整下载，请核对照片清单、编号与失败记录。
 
-### 下载相册
+## 排除规则和诊断
 
-1. 登录 [QQ 空间](https://qzone.qq.com/)
-2. 进入「我的相册」→ 选择具体相册
-3. 点击插件图标，设置最大下载数量（留空表示全部）
-4. 点击「下载相册」按钮
+排除相册名称可在管理页逐行填写。公开版默认规则为空，没有内置个人账号或相册名单，也不会覆盖原安装中的已有设置。
 
-> **注意**：旅游相册接口不同，暂不支持。
+可导出照片清单；未知接口格式会停止，并尝试自动导出脱敏结构诊断。不要公开浏览器存储中的原始请求地址，它可能包含会话授权参数。
 
-## 工作原理
+## 权限与局限
 
-### 数据流向
+- `downloads`用于保存照片，`storage`保存本机设置、进度和会话请求，`webRequest`读取相册接口地址。网络范围限定为 `https://*.qzone.qq.com/*`。
+- 用户手动登录，不接收密码，不绕过访问权限；只备份自己或获授权访问的相册。
+- QQ接口可能变化；不承诺所有账号、特殊相册或视频可下载。异常分页不会当作成功。
+- 浏览器关闭、休眠、网络中断会影响下载。本次发布为源码开源，不是浏览器商店上架。
 
-```
-QQ 相册页面 → background.js (拦截请求) → chrome.storage
-                                            ↓
-popup.html (用户点击下载) ← chrome.storage
-              ↓
-       popup.js (分页获取照片列表)
-              ↓
-       photoDownloader.js (Web Worker 下载)
-              ↓
-           JSZip 打包 → 浏览器下载
+## 开发验证
+
+无需构建，Node.js 22+ 运行核心测试：
+
+```sh
+node --test tests/core.test.cjs
 ```
 
-### 核心流程
+浏览器模拟测试需要Playwright及Chromium：
 
-1. **请求拦截**：拦截 QQ 相册 API 请求 `*://h5.qzone.qq.com/proxy/domain/photo.qzone.qq.com/fcgi-bin/cgi_list_photo*`，获取请求参数
-
-2. **分页获取**：该接口单次最多返回 500 张照片，插件通过 `pageStart` 参数循环获取全部数据
-
-3. **打包下载**：使用 Web Worker 在后台下载图片，通过 JSZip 打包成 ZIP 文件
-
-## 项目结构
-
-```
-└── src
-    ├── assets
-    │   └── icon.png           # 扩展图标
-    ├── background.js          # 后台脚本，拦截请求
-    ├── jszip.min.js           # JSZip 库
-    ├── photoDownloader.js     # Web Worker，下载图片
-    ├── popup.html             # 弹窗界面
-    ├── popup.js               # 主逻辑
-    └── styles.css             # 样式文件
+```sh
+npm install --no-save playwright
+npx playwright install chromium
+node tests/direct-download-smoke.cjs
+node tests/repeated-page-smoke.cjs
 ```
 
-## 故障排查
-
-如果遇到问题：
-- 右键插件图标 → 检查弹出窗口
-- 右键插件图标空白处 → 检查后台控制台
-- 查看网络请求是否正常
-
----
-
-^ ⑉・ᴗ・⑉ ૮ ˃ 感谢支持<br />
-<img src="https://github.com/user-attachments/assets/8b12eac8-cb25-435d-b098-bd4de82f8777" width="300" />
+可用 `PLAYWRIGHT_MODULE`、`BROWSER_EXECUTABLE` 指定本机运行时。自动测试使用虚构账号和模拟接口，不等于真实QQ账号全量下载验证。

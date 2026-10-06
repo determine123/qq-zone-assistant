@@ -1,0 +1,7 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>QQ 相册备份助手</title><link rel="stylesheet" href="manager.css"></head><body><main>
+<header><small>QQ ZONE · 本机备份</small><h1>输入相册，一键保存。</h1><p>在同一个 Edge 浏览器登录 QQ 空间。照片只下载到本机。</p></header>
+<section><h2>相册地址</h2><label>QQ 空间相册网址<input id="album-address" type="url" placeholder="https://user.qzone.qq.com/账号/photo/相册ID/"></label><label>最多下载张数（留空下载全部）<input id="limit" type="number" min="1" placeholder="全部照片"></label><button id="open-address">直接下载</button><p>自动打开目标相册，读取照片列表并直接下载，无需预览。需要登录时请手动登录后刷新相册。</p></section>
+<section aria-live="polite"><h2>下载进度</h2><progress id="progress" max="100" value="0"></progress><p id="status">输入相册地址开始</p><button id="pause">暂停</button><button id="resume">继续 / 重试</button><p>请保持此管理页打开。成功下载的照片会跳过。</p></section>
+
+<details><summary>排除规则与照片清单</summary><label>排除相册（每行一个）<textarea id="exclude"></textarea></label><button id="save">保存排除规则</button><button id="export">导出照片清单</button></details>
+</main><script src="core.js"></script><script src="manager.js"></script><script src="selection.js"></script></body></html>
